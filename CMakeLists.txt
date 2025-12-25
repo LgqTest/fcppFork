@@ -5,6 +5,7 @@ string(JSON TARGET_NAMESPACE_VALUE ERROR_VARIABLE json_error GET "${METADATA_JSO
 string(JSON PROJECT_VERSION_VALUE ERROR_VARIABLE json_error GET "${METADATA_JSON}" "version")
 string(JSON BUILD_CPPSTD ERROR_VARIABLE json_error GET "${METADATA_JSON}" "build_cppstd")
 string(JSON BUILD_CSTD ERROR_VARIABLE json_error GET "${METADATA_JSON}" "build_cstd")
+string(JSON ENABLE_COVERAGE ERROR_VARIABLE json_error GET "${METADATA_JSON}" "activate_code_coverage")
 string(JSON IS_SHARED ERROR_VARIABLE json_error GET "${METADATA_JSON}" "is_shared")
 string(JSON STD_MODULES ERROR_VARIABLE json_error GET "${METADATA_JSON}" "std_modules")
 set(LIB_NAME "${PROJECT_NAME_VALUE}")
@@ -170,6 +171,30 @@ target_include_directories(${LIB_NAME}_cpp PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
 )
+
+
+# code coverage options
+if(ENABLE_COVERAGE)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+        set(COVERAGE_FLAGS "--coverage" "-O0" "-g")
+        set(LINK_FLAGS "--coverage")
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        set(COVERAGE_FLAGS "-fprofile-instr-generate" "-fcoverage-mapping" "-O0" "-g")
+        set(LINK_FLAGS "")
+    else()
+        message(FATAL_ERROR "Code coverage not support for compiler: ${CMAKE_CXX_COMPILER_ID}")
+    endif()
+
+
+    target_compile_options(${LIB_NAME}_c PRIVATE ${COVERAGE_FLAGS})
+    target_compile_options(${LIB_NAME}_cpp PRIVATE ${COVERAGE_FLAGS})
+
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+        target_link_options(${LIB_NAME}_c PRIVATE ${LINK_FLAGS})
+        target_link_options(${LIB_NAME}_cpp PRIVATE ${LINK_FLAGS})
+    endif()
+
+endif()
 
 
 # module features are fully activated in C++23 or greater

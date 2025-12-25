@@ -3,10 +3,12 @@ from conan.tools.cmake import CMake, cmake_layout, CMakeToolchain
 from conan.tools.build import can_run
 from conan.tools.env import VirtualRunEnv, VirtualBuildEnv
 from pathlib import Path
+import subprocess
 import shutil
 import yaml
 import os
 sep = os.path.sep
+_get_file_name = (lambda x: x.split(sep)[-1])
 
 
 def _clear_test_build():
@@ -30,6 +32,7 @@ def _recursive_find(root: str, obj_files: list[str]):
 
 def _entry_lists() -> list[str]:
     return ['#include <gtest/gtest.h>\n',
+            '\n',
             '\n',
             'int main(int argc, char **argv) {\n',
             '    ::testing::InitGoogleTest(&argc, argv);\n',
@@ -68,6 +71,7 @@ class PackageTestConan(ConanFile):
         tc.variables["LIB_NAME"] = lib_name
         tc.variables["CXX_DEPS"] = self._get_targets()
         tc.variables["TRIGGER_TESTS"] = self.metadata.get('trigger_tests')
+        tc.variables['ENABLE_COVERAGE'] = self.metadata.get('activate_code_coverage')
         tc.variables["MAIN_LIB_TARGET"] = [_a := self.metadata.get('target'),
                                            f'{lib_name}::{lib_name}' if _a == 'auto' else _a][-1]
         tc.generate()
@@ -100,10 +104,11 @@ class PackageTestConan(ConanFile):
 
     def configure(self):
         supported_compilers = {"gcc", "msvc", "clang", "apple-clang", }  # no support for 'Visual Studio' in Conan1.0
-        if self.settings.compiler.__str__() in supported_compilers:
+        compiler = getattr(self.settings, 'compiler')
+        if compiler.__str__() in supported_compilers:
             _build_std = self.metadata.get("build_cppstd")
             _build_std = "17" if _build_std not in {"17", "20", "23"} else _build_std  # fallback
-            self.settings.compiler.cppstd = _build_std
+            compiler.cppstd = _build_std
 
     def test(self):
 
@@ -138,22 +143,105 @@ class PackageTestConan(ConanFile):
 
                 self._remove_entries()
 
+        if self.metadata.get('activate_code_coverage'):
+            self._code_coverage_auto()
+
+    def _code_coverage_auto(self):
+        compiler = getattr(self.settings, 'compiler').__str__()
+        if compiler == 'gcc':
+            self._code_coverage_gcc()
+        elif compiler == 'clang':
+            self._code_coverage_clang()
+        else:
+            raise NotImplementedError(f'Compiler {compiler} is not supported.')
+
+    def _code_coverage_clang(self):
+        raise NotImplementedError('Clang is under implementation')
+
+    def _code_coverage_gcc(self):
+
+        # get conan build folder
+        _name, _ver = [self.metadata.get(_) for _ in ['name', 'version']]
+        _tmp = subprocess.run(["conan", "list", f"{_name}/{_ver}:*"], capture_output=True, text=True)
+        _tmp_ref = [str(_).strip() for _ in _tmp.stdout.split('\n')]
+        _pkg_uid = _tmp_ref[[i for i, _ in enumerate(_tmp_ref) if _ == 'packages'][0] + 1]
+        _tmp = subprocess.run(["conan", "cache", "path", f"{_name}/{_ver}:{_pkg_uid}"],
+                              capture_output=True, text=True)
+        _main_pkg_build_fd = sep.join(_tmp.stdout.split(sep)[:-1] + ['b', 'build'])
+
+        # collect code coverage files to export/coverage/
+        _gcda = [str(_) for _ in list(Path(_main_pkg_build_fd).rglob('*.gcda'))]
+        _gcno = [_[:-4] + 'gcno' for _ in _gcda]
+
+        target_folder = self.recipe_folder + sep + 'test' + sep + 'export'
+        coverage_folder = target_folder + sep + 'coverage'
+        if not os.path.exists(target_folder):
+            os.mkdir(target_folder)
+        else:
+            if os.path.exists(coverage_folder):
+                shutil.rmtree(coverage_folder)
+        os.mkdir(coverage_folder)
+
+        for v1, v2 in zip(_gcda, _gcno):
+            shutil.copy2(v1, coverage_folder + sep + _get_file_name(v1))
+            shutil.copy2(v2, coverage_folder + sep + _get_file_name(v2))
+
+        # auto html report generation
+        cmd1 = ['lcov', '--directory', coverage_folder, '--capture', '--output-file',
+                os.path.join(coverage_folder, 'coverage_test.info'), '--rc', 'geninfo_auto_base=1']
+        subprocess.run(cmd1, check=True)
+        cmd2 = ['lcov', '--extract', os.path.join(coverage_folder, 'coverage_test.info'),
+                f'*/.conan2/p/b/{_name[:3]}*', '--output-file',
+                os.path.join(coverage_folder, 'coverage_test.filtered.info')]
+        subprocess.run(cmd2, check=True) # hard-coding: your package name len >= 3
+        cmd3 = ['genhtml', os.path.join(coverage_folder, 'coverage_test.filtered.info'),
+                '--output-directory', os.path.join(coverage_folder, 'coverage_report')]
+        subprocess.run(cmd3, check=True)
+
+        # remove intermediate files
+        for _f in os.listdir(coverage_folder):
+            _full_name = coverage_folder + sep + _f
+            if not os.path.isdir(_full_name):
+                os.remove(_full_name)
+
     def _add_entries(self):
         if self.metadata.get('trigger_tests'):
+
             _f_stress = self.recipe_folder + sep + 'test' + sep + 'stress'
-            _f_unit = self.recipe_folder + sep + 'test' + sep + 'unit'
             if not os.path.exists(_m := _f_stress + sep + 'main.cpp'):
                 with open(_m, 'w', encoding='utf-8') as f:
                     f.write(''.join(_entry_lists()))
-            if not os.path.exists(_m := _f_unit + sep + 'main.cpp'):
-                with open(_m, 'w', encoding='utf-8') as f:
-                    f.write(''.join(_entry_lists()))
+
+            _f_unit = self.recipe_folder + sep + 'test' + sep + 'unit'
+            if self.metadata.get('activate_code_coverage'):
+                _files = [str(_) for _ in list(Path(_f_unit).rglob('*.cpp'))]
+                _cache = [[_a := _.split(sep), (sep.join(_a[:-1]), _a[-1])][-1] for _ in _files]
+                for _test_src, _test_ucov in zip(_files, _cache):
+                    with open(_test_src, 'r') as f:
+                        _tmp = f.readlines()
+                    _tmp.extend(_entry_lists()[1:])
+                    with open(_test_ucov[0] + sep + 'ucov_' + _test_ucov[1], 'w', encoding='utf-8') as f:
+                        f.write(''.join(_tmp))
+            else:
+                if not os.path.exists(_m := _f_unit + sep + 'main.cpp'):
+                    with open(_m, 'w', encoding='utf-8') as f:
+                        f.write(''.join(_entry_lists()))
 
     def _remove_entries(self):
-        if os.path.exists(_f1 := self.recipe_folder + sep + 'test' + sep + 'stress' + sep + 'main.cpp'):
-            os.remove(_f1)
-        if os.path.exists(_f2 := self.recipe_folder + sep + 'test' + sep + 'unit' + sep + 'main.cpp'):
-            os.remove(_f2)
+        if self.metadata.get('trigger_tests'):
+
+            if os.path.exists(_f1 := self.recipe_folder + sep + 'test' + sep + 'stress' + sep + 'main.cpp'):
+                os.remove(_f1)
+
+            if self.metadata.get('activate_code_coverage'):
+                _f_unit = self.recipe_folder + sep + 'test' + sep + 'unit'
+                _files = [str(_) for _ in list(Path(_f_unit).rglob('*.cpp'))]
+                for _m in _files:
+                    if _m.split(sep)[-1].startswith('ucov_'):
+                        os.remove(_m)
+            else:
+                if os.path.exists(_f3 := self.recipe_folder + sep + 'test' + sep + 'unit' + sep + 'main.cpp'):
+                    os.remove(_f3)
 
 
 if __name__ == '__main__':

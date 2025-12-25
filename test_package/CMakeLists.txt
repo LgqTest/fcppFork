@@ -43,8 +43,59 @@ function(split_conan_dependency INPUT_STR PACKAGE_NAME TARGETS)
 endfunction()
 
 
+function(apply_unit_coverage U_NAME U_FILE)
+    find_package(GTest REQUIRED)
+    add_executable(${U_NAME} ${U_FILE})
+    target_link_libraries(${U_NAME} PRIVATE ${MAIN_LIB_TARGET} GTest::gtest)
+    gtest_discover_tests(${U_NAME})
+
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+        set(COVERAGE_FLAGS "--coverage" "-O0" "-g")
+        set(LINK_FLAGS "--coverage")
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        set(COVERAGE_FLAGS "-fprofile-instr-generate" "-fcoverage-mapping" "-O0" "-g")
+        set(LINK_FLAGS "")
+    else()
+        message(FATAL_ERROR "Code coverage not support for compiler: ${CMAKE_CXX_COMPILER_ID}")
+    endif()
+
+    target_compile_options(${U_NAME} PRIVATE ${COVERAGE_FLAGS})
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+        target_link_options(${U_NAME} PRIVATE ${LINK_FLAGS})
+    endif()
+endfunction()
+
+
+function(enable_main_coverage)
+    find_package(GTest REQUIRED)
+    include(GoogleTest)
+
+    target_link_libraries(main PRIVATE GTest::gtest)
+    enable_testing()
+    gtest_discover_tests(main)
+
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+        set(COVERAGE_FLAGS "--coverage" "-O0" "-g")
+        set(LINK_FLAGS "--coverage")
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        set(COVERAGE_FLAGS "-fprofile-instr-generate" "-fcoverage-mapping" "-O0" "-g")
+        set(LINK_FLAGS "")
+    else()
+        message(FATAL_ERROR "Code coverage not support for compiler: ${CMAKE_CXX_COMPILER_ID}")
+    endif()
+
+    target_compile_options(main PRIVATE ${COVERAGE_FLAGS})
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+        target_link_options(main PRIVATE ${LINK_FLAGS})
+    endif()
+endfunction()
+
+
 add_executable(main main.cpp)
 
+if(TRIGGER_TESTS AND ENABLE_COVERAGE)
+    enable_main_coverage()
+endif()
 
 if(NOT CXX_DEPS STREQUAL "[]")
     parse_conan_deps(CXX_DEPS PARSED_CXX_DEPS)
@@ -57,19 +108,29 @@ endif()
 
 target_include_directories(main PRIVATE ${${LIB_NAME}_INCLUDE_DIRS})
 
-
 if (TRIGGER_TESTS)
     find_package(${LIB_NAME} REQUIRED)
     find_package(GTest REQUIRED)
+    include(GoogleTest)
     enable_testing()
 
-    file(GLOB TEST_SOURCES_U "test/unit/*.cpp")
-    add_executable(unit_tests ${TEST_SOURCES_U})
-    target_link_libraries(unit_tests PRIVATE ${MAIN_LIB_TARGET} GTest::gtest)
-    add_test(NAME unit_tests COMMAND unit_tests)
-
-    file(GLOB TEST_SOURCES_S "test/stress/*.cpp")
+    file(GLOB_RECURSE TEST_SOURCES_S "test/stress/*.cpp")
     add_executable(stress_tests ${TEST_SOURCES_S})
     target_link_libraries(stress_tests PRIVATE ${MAIN_LIB_TARGET} GTest::gtest)
-    add_test(NAME stress_tests COMMAND stress_tests)
+    gtest_discover_tests(stress_tests)
+
+    file(GLOB_RECURSE TEST_SOURCES_U "test/unit/*.cpp")
+    if(NOT ENABLE_COVERAGE)
+        add_executable(unit_tests ${TEST_SOURCES_U})
+        target_link_libraries(unit_tests PRIVATE ${MAIN_LIB_TARGET} GTest::gtest)
+        gtest_discover_tests(unit_tests)
+    else()
+        foreach(U_SOURCE IN LISTS TEST_SOURCES_U)
+            get_filename_component(U_NAME ${U_SOURCE} NAME_WE)
+            string(SUBSTRING ${U_NAME} 0 5 U_NAME_PREFIX)
+            if(U_NAME_PREFIX STREQUAL "ucov_")
+                apply_unit_coverage(${U_NAME} ${U_SOURCE})
+            endif()
+        endforeach()
+    endif()
 endif ()
