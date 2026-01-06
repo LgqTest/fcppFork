@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Sync labels templates
-        uses: micnnim/action-sync-lables@v1
+        uses: micnnim/action-sync-labels@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           source_repo: HeT-FTI/.github-private
