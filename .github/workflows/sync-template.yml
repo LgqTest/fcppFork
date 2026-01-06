@@ -11,8 +11,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Sync labels templates
-        uses: micnnim/action-sync-labels@v1
+        uses: actions/labeler@v5
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          source_repo: HeT-FTI/.github-private
-          source_label_path: labels.yml
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          label-path: .github/labels.yml
