@@ -20,8 +20,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Labeler
-        uses: Mic92/labeler@master
+        uses: Mic92/labels@master
         with:
-          filename: .github/labels.yml
+          manifest: .github/labels.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
