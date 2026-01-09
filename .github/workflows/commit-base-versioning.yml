@@ -3,7 +3,6 @@ name: Versioning
 on:
   push:
     branches:
-      - main
       - fcpp-semver
 
 permissions:
@@ -49,4 +48,4 @@ jobs:
       - name: Push Changes
         if: steps.check_build_type.outcome == 'success'
         run: |
-          git push origin main
+          git push origin fcpp-semver
