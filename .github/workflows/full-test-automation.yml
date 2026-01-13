@@ -47,14 +47,18 @@ jobs:
           trigger = str(m.get('trigger_tests')).lower()
           saving = str(m.get('saving_tests_log')).lower()
           coverage = str(m.get('activate_code_coverage')).lower()
-          print('all values:', pkg_name, type, trigger, saving, coverage)
 
-          print(f'::set-output name=pkg_name::{pkg_name}')
-          print(f'::set-output name=type::{type}')
-          print(f'::set-output name=trigger::{trigger}')
-          print(f'::set-output name=saving::{saving}')
-          print(f'::set-output name=coverage::{coverage}')
+          env_file = os.environ.get('GITHUB_ENV')
+          if env_file:
+            with open(env_file, 'a') as f:
+              f.write(f'pkg_name={pkg_name}\n')
+              f.write(f'type={type}\n')
+              f.write(f'trigger={trigger}\n')
+              f.write(f'saving={saving}\n')
+              f.write(f'coverage={coverage}\n')
           "
+
+          echo "the PKG_NAME: $PKG_NAME"
 
       - name: Configure Conan
         run: |
