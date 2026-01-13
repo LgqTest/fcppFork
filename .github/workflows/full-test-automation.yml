@@ -21,7 +21,7 @@ jobs:
 
       - name: Check build_type
         id: check_build_type
-        runs: |
+        run: |
           BUILD_TYPE=$(jq -r '.build_type' metadata.json)
           echo "build_type=$BUILD_TYPE" >> $GITHUB_OUTPUT
           if [ "$BUILD_TYPE" == "Release" ]; then
