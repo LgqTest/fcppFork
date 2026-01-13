@@ -35,8 +35,9 @@ jobs:
   auto-testing:
     needs: check-build-type
     if: >-
-      steps.check_build_type.outputs.should_versioning == 'false' &&
-      github.event_name == 'push' && contains(join(github.event.commits.*.message, '\n'), ':+1:')
+      ${{ needs.check_build_type.outputs.should_versioning == 'false' &&
+          github.event_name == 'push' &&
+          contains(join(github.event.commits.*.message, '\n'), ':+1:') }}
     name: Auto Testing (${{ matrix.os }}, ${{ matrix.build_type }})
     runs-on: ubuntu-latest
 
