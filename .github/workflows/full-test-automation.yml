@@ -87,13 +87,18 @@ jobs:
           conan create . -pr:b=default -pr:h=default -s build_type=Debug --build=missing
         timeout-minutes: 30
 
+      - name: Set timestamp
+        id: timestamp
+        run: |
+          echo "timestamp=$(date +%Y-%m-%dT%H_%M_%SZ)" >> $GITHUB_ENV
+
       - name: Upload test log
         if: >-
           steps.read_metadata.outputs.trigger == 'true' &&
           steps.read_metadata.outputs.saving == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: TestResult-log-$(data +%Y-%m-%dT%H_%M_%SZ)
+          name: TestResult-log-${{ env.timestamp }}
           path: test_package/test/export/TestResult.log
           if-no-files-found: warn
 
@@ -103,7 +108,7 @@ jobs:
           steps.read_metadata.outputs.coverage == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: Coverage-report-$(data +%Y-%m-%dT%H_%M_%SZ)
+          name: Coverage-report-${{ env.timestamp }}
           path: test_package/test/export/coverage/
           if-no-files-found: warn
 
@@ -114,5 +119,4 @@ jobs:
       - name: Clean up Conan packages
         if: always()
         run: |
-          echo "${{ steps.read_metadata.outputs.pkg_name }}"
-          conan remove "fcpp/*" --confirm
+          conan remove "${{ steps.read_metadata.outputs.pkg_name }}/*" --confirm
