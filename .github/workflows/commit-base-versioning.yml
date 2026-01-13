@@ -34,8 +34,9 @@ jobs:
   auto-versioning:
     needs: check-build-type
     if: >-
-      steps.check_build_type.outputs.should_versioning == 'true' &&
-      github.event_name == 'push' && !contains(join(github.event.commits.*.message, '\n'), '(:package:): ')
+      ${{ needs.check_build_type.outputs.should_versioning == 'true' &&
+          github.event_name == 'push' && 
+          !contains(join(github.event.commits.*.message, '\n'), '(:package:): ') }}
     runs-on: ubuntu-latest
     steps:
       - name: Set up Python
