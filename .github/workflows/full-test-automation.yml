@@ -29,7 +29,10 @@ jobs:
   
   auto-testing:
     needs: check-build-type
-    
+    if: >-
+      ${{ needs.check-build-type.outputs.build_type == 'Debug' &&
+          github.event_name == 'push' && 
+          contains(join(github.event.commits.*.message, '\n'), ':+1:') }}
     name: Auto Testing
     runs-on: ubuntu-latest
 
