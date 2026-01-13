@@ -47,6 +47,12 @@ jobs:
           trigger = str(m.get('trigger_tests', False)).lower()
           saving = str(m.get('saving_tests_log', False)).lower()
           coverage = str(m.get('activate_code_coverage', False)).lower()
+
+          print(f'::set-output name=name::{pkg_name}')
+          print(f'::set-output name=type::{type}'）
+          print(f'::set-output name=trigger_tests::{trigger}')
+          print(f'::set-output name=saving::{saving}')
+          print(f'::set-output name=coverage::{coverage}')
           "
 
       - name: Configure Conan
@@ -80,7 +86,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: TestResult-log-${{ matrix.os }}-${{ matrix.build_type }}
-          path: test_package/export/TestResult.log
+          path: test_package/test/export/TestResult.log
           if-no-files-found: warn
 
       - name: Upload code coverage
@@ -91,7 +97,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Coverage-report-${{ matrix.os }}-${{ matrix.build_type }}
-          path: test_package/export/coverage/
+          path: test_package/test/export/coverage/
           if-no-files-found: warn
 
       - name: Clean up test_package builds
