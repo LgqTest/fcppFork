@@ -58,7 +58,7 @@ jobs:
           trigger=$(jq -r '.trigger_tests | tostring|  ascii_downcase' metadata.json)
           saving=$(jq -r '.saving_tests_log | tostring | ascii_downcase' metadata.json)
           coverage=$(jq -r '.activate_code_coverage | tostring | ascii_downcase' metadata.json)
-          echo "all values: $pkg_name $type $saving $coverage"
+          echo "all values: $pkg_name $trigger $saving $coverage"
 
           echo "pck_name=$pkg_name" >> "$GITHUB_OUTPUT"
           echo "trigger=$trigger" >> "$GITHUB_OUTPUT"
@@ -70,8 +70,7 @@ jobs:
           echo "CONAN_HOME=${{ env.CONAN_HOME }}" >> $GITHUB_ENV
           conan profile detect --force
 
-      - name: System dependencies (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
+      - name: System dependencies
         run: |
           sudo apt install -y libnsl-dev lcov
 
@@ -85,28 +84,26 @@ jobs:
 
       - name: Build and test with Conan
         run: |
-          conan create . -pr:b=default -pr:h=default -s build_type=${{ matrix.build_type }} --build=missing
+          conan create . -pr:b=default -pr:h=default -s build_type=Debug --build=missing
         timeout-minutes: 30
 
       - name: Upload test log
         if: >-
-          steps.read_metadata.outputs.type == 'Debug' &&
           steps.read_metadata.outputs.trigger == 'true' &&
           steps.read_metadata.outputs.saving == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: TestResult-log-${{ matrix.os }}-${{ matrix.build_type }}
+          name: TestResult-log-$(data +%Y-%m-%dT%H:%M:%SZ)
           path: test_package/test/export/TestResult.log
           if-no-files-found: warn
 
       - name: Upload code coverage
         if: >-
-          steps.read_metadata.outputs.type == 'Debug' &&
           steps.read_metadata.outputs.trigger == 'true' &&
           steps.read_metadata.outputs.coverage == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: Coverage-report-${{ matrix.os }}-${{ matrix.build_type }}
+          name: Coverage-report-$(data +%Y-%m-%dT%H:%M:%SZ)
           path: test_package/test/export/coverage/
           if-no-files-found: warn
 
