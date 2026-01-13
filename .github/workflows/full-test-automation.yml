@@ -93,7 +93,7 @@ jobs:
           steps.read_metadata.outputs.saving == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: TestResult-log-$(data +%Y-%m-%dT%H:%M:%SZ)
+          name: TestResult-log-$(data +%Y-%m-%dT%H_%M_%SZ)
           path: test_package/test/export/TestResult.log
           if-no-files-found: warn
 
@@ -103,7 +103,7 @@ jobs:
           steps.read_metadata.outputs.coverage == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: Coverage-report-$(data +%Y-%m-%dT%H:%M:%SZ)
+          name: Coverage-report-$(data +%Y-%m-%dT%H_%M_%SZ)
           path: test_package/test/export/coverage/
           if-no-files-found: warn
 
