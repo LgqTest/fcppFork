@@ -54,15 +54,13 @@ jobs:
       - name: Read metadata.json
         id: read_metadata
         run: |
-          pkg_name=$(jq -r '.name' metadata.json)
-          type=$(jq -r '.build_type' metadata.json)
-          trigger=$(jq -r '.trigger_tests | ascii_downcase' metadata.json)
-          saving=$(jq -r '.saving_tests_log | ascii_downcase' metadata.json)
-          coverage=$(jq -r '.activate_code_coverage | ascii_downcase' metadata.json)
-          echo "all values: $pkg_name $type $trigger $saving $coverage"
+          pkg_name=$(jq -r '.name | tostring' metadata.json)
+          trigger=$(jq -r '.trigger_tests | tostring|  ascii_downcase' metadata.json)
+          saving=$(jq -r '.saving_tests_log | tostring | ascii_downcase' metadata.json)
+          coverage=$(jq -r '.activate_code_coverage | tostring | ascii_downcase' metadata.json)
+          echo "all values: $pkg_name $type $saving $coverage"
 
           echo "pck_name=$pkg_name" >> "$GITHUB_OUTPUT"
-          echo "type=$type" >> "$GITHUB_OUTPUT"
           echo "trigger=$trigger" >> "$GITHUB_OUTPUT"
           echo "saving=$saving" >> "$GITHUB_OUTPUT"
           echo "coverage=$coverage" >> "$GITHUB_OUTPUT"
