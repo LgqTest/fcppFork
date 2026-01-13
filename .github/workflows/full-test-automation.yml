@@ -48,9 +48,9 @@ jobs:
           saving = str(m.get('saving_tests_log', False)).lower()
           coverage = str(m.get('activate_code_coverage', False)).lower()
 
-          print(f'::set-output name=name::{pkg_name}')
-          print(f'::set-output name=type::{type}'）
-          print(f'::set-output name=trigger_tests::{trigger}')
+          print(f'::set-output name=pkg_name::{pkg_name}')
+          print(f'::set-output name=type::{type}')
+          print(f'::set-output name=trigger::{trigger}')
           print(f'::set-output name=saving::{saving}')
           print(f'::set-output name=coverage::{coverage}')
           "
