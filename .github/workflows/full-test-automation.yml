@@ -114,6 +114,11 @@ jobs:
         run: |
           python ./test_package/conanfile.py
 
+      - name: Test remove
+        run: |
+          echo "packages name is: ${{ steps.read_metadata.outputs.pkg_name }}"
+          conan remove "${{ steps.read_metadata.outputs.pkg_name }}/*" --confirm
+
       - name: Clean up Conan packages
         if: always()
         run: |

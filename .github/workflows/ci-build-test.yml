@@ -7,14 +7,13 @@ on:
     branches: [ main ]
 
 env:
-  CONAN_HOME: ~/conan_home
+  CONAN_HOME: ~/.conan2
 
 jobs:
   build-and-test:
     if: >-
       github.event_name == 'push' &&
-      contains(join(github.event.commits.*.message, '\n'), ':building_construction:') ||
-      github.event_name == 'pull_request'
+      contains(join(github.event.commits.*.message, '\n'), ':building_construction:')
     name: Build and Test (${{ matrix.os }}, ${{ matrix.build_type }})
     runs-on: ${{ matrix.os }}
     strategy:
