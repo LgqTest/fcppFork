@@ -7,14 +7,13 @@ on:
     branches: [ main ]
 
 env:
-  CONAN_HOME: ${{ github.workspace }}/conan_home
+  CONAN_HOME: ~/.conan2
 
 jobs:
   docs:
     if: >-
       github.event_name == 'push' &&
-      contains(join(github.event.commits.*.message, '\n'), ':book:') ||
-      github.event_name == 'pull_request'
+      contains(join(github.event.commits.*.message, '\n'), ':book:')
     name: Build Documentation
     runs-on: ubuntu-latest
 
@@ -30,7 +29,7 @@ jobs:
       - name: Install documentation dependencies
         run: |
           sudo apt install -y doxygen graphviz
-          pip install numpy sphinx sphinx-intl
+          pip install numpy sphinx sphinx-intl sphinx-rtd-theme
 
       - name: Build documentation
         run: |

@@ -7,14 +7,13 @@ on:
     branches: [ main ]
 
 env:
-  CONAN_HOME: ${{ github.workspace }}/conan_home
+  CONAN_HOME: ~/.conan2
 
 jobs:
   build-and-test:
     if: >-
       github.event_name == 'push' &&
-      contains(join(github.event.commits.*.message, '\n'), ':building_construction:') ||
-      github.event_name == 'pull_request'
+      contains(join(github.event.commits.*.message, '\n'), ':building_construction:')
     name: Build and Test (${{ matrix.os }}, ${{ matrix.build_type }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -37,6 +36,12 @@ jobs:
       - name: Install Conan
         run: |
           pip install conan
+
+      - name: Get package name
+        id: read_meta
+        run: |
+          pkg_name=$(jq -r '.name | tostring' metadata.json)
+          echo "pkg_name=$pkg_name" >> $GITHUB_OUTPUT
 
       - name: Configure Conan
         run: |
@@ -68,4 +73,4 @@ jobs:
       - name: Clean up Conan packages
         if: always()
         run: |
-          conan remove "fcpp/*" --confirm
+          conan remove "${{ steps.read_meta.outputs.pkg_name }}/*" --confirm

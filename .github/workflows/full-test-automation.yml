@@ -1,0 +1,120 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CONAN_HOME: ~/.conan2
+
+jobs:
+  check-build-type:
+    runs-on: ubuntu-latest
+    outputs:
+      build_type: ${{ steps.check_build_type.outputs.build_type }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check build_type
+        id: check_build_type
+        run: |
+          BUILD_TYPE=$(jq -r '.build_type | tostring' metadata.json)
+          echo "build_type=$BUILD_TYPE" >> $GITHUB_OUTPUT
+  
+  auto-testing:
+    needs: check-build-type
+    if: >-
+      ${{ needs.check-build-type.outputs.build_type == 'Debug' && 
+          github.event_name == 'push' && 
+          contains(join(github.event.commits.*.message, '\n'), ':beer:') }}
+    name: Auto Testing
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Conan
+        run: |
+          pip install conan
+
+      - name: Read metadata.json
+        id: read_metadata
+        run: |
+          pkg_name=$(jq -r '.name | tostring' metadata.json)
+          trigger=$(jq -r '.trigger_tests | tostring|  ascii_downcase' metadata.json)
+          saving=$(jq -r '.saving_tests_log | tostring | ascii_downcase' metadata.json)
+          coverage=$(jq -r '.activate_code_coverage | tostring | ascii_downcase' metadata.json) 
+
+          echo "pkg_name=$pkg_name" >> "$GITHUB_OUTPUT"
+          echo "trigger=$trigger" >> "$GITHUB_OUTPUT"
+          echo "saving=$saving" >> "$GITHUB_OUTPUT"
+          echo "coverage=$coverage" >> "$GITHUB_OUTPUT"
+
+      - name: Configure Conan
+        run: |
+          echo "CONAN_HOME=${{ env.CONAN_HOME }}" >> $GITHUB_ENV
+          conan profile detect --force
+
+      - name: System dependencies
+        run: |
+          sudo apt install -y libnsl-dev lcov
+
+      - name: Cache Conan packages
+        uses: actions/cache@v5
+        with:
+          path: ${{ env.CONAN_HOME }}
+          key: conan-${{ runner.os }}-${{ hashFiles('conanfile.py', 'conan.lock') }}
+          restore-keys: |
+            conan-${{ runner.os }}-
+
+      - name: Build and test with Conan
+        run: |
+          conan create . -pr:b=default -pr:h=default -s build_type=Debug --build=missing
+        timeout-minutes: 30
+
+      - name: Set timestamp
+        id: timestamp
+        run: |
+          echo "timestamp=$(date +%Y-%m-%dT%H_%M_%SZ)" >> $GITHUB_ENV
+
+      - name: Upload test log
+        if: >-
+          steps.read_metadata.outputs.trigger == 'true' &&
+          steps.read_metadata.outputs.saving == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestResult-log-${{ env.timestamp }}
+          path: test_package/test/export/TestResult.log
+          if-no-files-found: warn
+
+      - name: Upload code coverage
+        if: >-
+          steps.read_metadata.outputs.trigger == 'true' &&
+          steps.read_metadata.outputs.coverage == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Coverage-report-${{ env.timestamp }}
+          path: test_package/test/export/coverage/
+          if-no-files-found: warn
+
+      - name: Clean up test_package builds
+        run: |
+          python ./test_package/conanfile.py
+
+      - name: Clean up Conan package
+        if: always()
+        run: |
+          conan remove "${{ steps.read_metadata.outputs.pkg_name }}/*" --confirm
+
