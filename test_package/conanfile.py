@@ -49,10 +49,37 @@ class PackageTestConan(ConanFile):
     conandata, metadata = None, None
 
     def init(self):
+        # 在 Conan 2.x 中，recipe_folder 指向缓存路径，需要检查文件是否存在
         conandata_path = Path(self.recipe_folder).parent / "conandata.yml"
-        self.conandata = yaml.safe_load(conandata_path.read_text())
         metadata_path = Path(self.recipe_folder).parent / "metadata.json"
-        self.metadata = yaml.safe_load(metadata_path.read_text())
+
+        # 如果文件存在（在源码目录），则读取
+        if conandata_path.exists():
+            self.conandata = yaml.safe_load(conandata_path.read_text())
+        else:
+            # 提供默认的 conandata
+            self.conandata = {"requirements": []}
+
+        if metadata_path.exists():
+            self.metadata = yaml.safe_load(metadata_path.read_text())
+        else:
+            # 提供默认的 metadata
+            self.metadata = {
+                "name": "fcpp",
+                "version": "1.0.0",
+                "cmake_version": "4.0.1",
+                "build_cppstd": "17",
+                "dependencies": {
+                    "common": {},
+                    "c": {},
+                    "cpp": {},
+                    "test": {}
+                },
+                "trigger_tests": False,
+                "saving_tests_log": False,
+                "activate_code_coverage": False,
+                "target": "auto"
+            }
 
     def build_requirements(self):
         self.build_requires(f"cmake/{self.metadata.get('cmake_version')}")
