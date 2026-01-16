@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'main'
+      - 'fcpp-dev'
     paths:
       - '.github/misc/labels.yml'
   pull_request:
