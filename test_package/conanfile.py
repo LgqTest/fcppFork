@@ -46,6 +46,9 @@ class PackageTestConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     generators = "CMakeDeps"
 
+    # 导出源文件到缓存（Conan 2.x 使用 conan create 构建时必需）
+    exports_sources = "CMakeLists.txt", "main.cpp", "test/*"
+
     conandata, metadata = None, None
 
     def init(self):
