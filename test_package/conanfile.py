@@ -42,6 +42,7 @@ def _entry_lists() -> list[str]:
 
 class PackageTestConan(ConanFile):
     name = "fcpp_test_package"
+    version = "1.0.0"
     settings = "os", "compiler", "build_type", "arch"
     generators = "CMakeDeps"
 
