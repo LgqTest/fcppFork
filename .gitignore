@@ -13,3 +13,7 @@
 
 # test framework
 /test_package/test/export/TestResult.log
+
+# local documentation (use QUICK_START.md instead)
+conan-github-self-runner-Use-Guide.md
+setup_ci_sudo.sh
