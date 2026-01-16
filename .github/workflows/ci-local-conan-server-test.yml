@@ -54,8 +54,8 @@ jobs:
           echo "CONAN_HOME=${{ env.CONAN_HOME }}" >> $GITHUB_ENV
           conan profile detect --force
 
-          # 添加本地 Conan Server (Conan 2.x 不需要 --insert 参数)
-          conan remote add local-server ${{ env.CONAN_SERVER_URL }}
+          # 添加本地 Conan Server (使用 --force 覆盖已存在的同名或同URL远程仓库)
+          conan remote add local-server ${{ env.CONAN_SERVER_URL }} --force
 
           # 登录本地服务器
           echo "${{ env.CONAN_SERVER_USER }}" | conan remote login local-server --password ${{ env.CONAN_SERVER_USER }}
