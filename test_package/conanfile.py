@@ -91,6 +91,13 @@ class PackageTestConan(ConanFile):
         # 当通过 conan create 运行时，tested_reference_str 可能为 None
         if self.tested_reference_str:
             self.requires(self.tested_reference_str)
+        else:
+            # 如果 tested_reference_str 为 None（通过 conan create 运行），
+            # 从 metadata 获取包名和版本作为依赖
+            pkg_name = self.metadata.get('name', 'fcpp')
+            pkg_version = self.metadata.get('version', '1.0.0')
+            self.requires(f"{pkg_name}/{pkg_version}")
+
         for req in self.conandata.get("requirements", []):
             self.requires(req)
 
