@@ -80,12 +80,11 @@ jobs:
 
       - name: Upload to local Conan Server
         run: |
-          # 上传包到本地服务器
+          # 上传包到本地服务器 (Conan 2.x 不需要 --all 和 --confirm 参数)
+          # 默认会上传所有相关的包文件（recipe + binaries）
           conan upload \
             "${{ steps.read_meta.outputs.pkg_name }}/${{ steps.read_meta.outputs.pkg_version }}@" \
-            --remote=local-server \
-            --confirm \
-            --all
+            --remote=local-server
 
       - name: Verify upload
         run: |
