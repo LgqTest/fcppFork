@@ -136,7 +136,9 @@ class PackageTestConan(ConanFile):
         cmake.build()
 
     def layout(self):
-        cmake_layout(self)
+        # 在 Conan 2.x 中，cmake_layout 默认期望源码在 src/ 子目录
+        # 但 test_package 的 CMakeLists.txt 在根目录，所以需要指定
+        cmake_layout(self, src_folder=".")
 
     def configure(self):
         supported_compilers = {"gcc", "msvc", "clang", "apple-clang", }  # no support for 'Visual Studio' in Conan1.0
