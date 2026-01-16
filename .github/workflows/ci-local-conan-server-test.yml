@@ -57,8 +57,8 @@ jobs:
           # 添加本地 Conan Server (使用 --force 覆盖已存在的同名或同URL远程仓库)
           conan remote add local-server ${{ env.CONAN_SERVER_URL }} --force
 
-          # 登录本地服务器
-          echo "${{ env.CONAN_SERVER_USER }}" | conan remote login local-server --password ${{ env.CONAN_SERVER_USER }}
+          # 登录本地服务器 (Conan 2.x 语法: conan remote login <remote> <username> --password <password>)
+          conan remote login local-server ${{ env.CONAN_SERVER_USER }} --password ${{ env.CONAN_SERVER_USER }}
 
           # 验证连接
           conan remote list
