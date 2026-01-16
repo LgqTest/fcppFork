@@ -2,7 +2,7 @@
 #include <iostream>
 #include <ctest.h>
 #include "cpptest.hpp"
-#include "net.hpp"
+// #include "net.hpp"  // 注释掉：net.hpp 需要 dlib 深度学习库，在 CI 环境中可能不可用
 // import "hello.hpp"; // C++23 only
 
 
