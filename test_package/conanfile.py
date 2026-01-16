@@ -85,7 +85,9 @@ class PackageTestConan(ConanFile):
         self.build_requires(f"cmake/{self.metadata.get('cmake_version')}")
 
     def requirements(self):
-        self.requires(self.tested_reference_str)
+        # 当通过 conan create 运行时，tested_reference_str 可能为 None
+        if self.tested_reference_str:
+            self.requires(self.tested_reference_str)
         for req in self.conandata.get("requirements", []):
             self.requires(req)
 
@@ -96,7 +98,12 @@ class PackageTestConan(ConanFile):
         run_env.generate(scope="run")
 
         tc = CMakeToolchain(self)
-        lib_name = self.tested_reference_str.split("/")[0]
+        # 获取库的名称：如果 tested_reference_str 存在则使用，否则从 metadata 获取
+        if self.tested_reference_str:
+            lib_name = self.tested_reference_str.split("/")[0]
+        else:
+            lib_name = self.metadata.get('name', 'fcpp')
+
         tc.variables["LIB_NAME"] = lib_name
         tc.variables["CXX_DEPS"] = self._get_targets()
         tc.variables["TRIGGER_TESTS"] = self.metadata.get('trigger_tests')
