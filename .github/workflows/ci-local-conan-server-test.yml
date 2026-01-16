@@ -16,7 +16,7 @@ jobs:
     # 只在包含特定 emoji 的 commit 时触发
     if: >-
       github.event_name == 'push' &&
-      contains(join(github.event.commits.*.message, '\n'), ':building_construction:')
+      contains(join(github.event.commits.*.message, '\n'), ':fire:')
 
     name: Local Conan Server Test (${{ matrix.build_type }})
     # 使用 self-hosted runner，根据你的 runner 标签配置
@@ -54,8 +54,8 @@ jobs:
           echo "CONAN_HOME=${{ env.CONAN_HOME }}" >> $GITHUB_ENV
           conan profile detect --force
 
-          # 添加本地 Conan Server
-          conan remote add local-server ${{ env.CONAN_SERVER_URL }} --insert 0
+          # 添加本地 Conan Server (Conan 2.x 不需要 --insert 参数)
+          conan remote add local-server ${{ env.CONAN_SERVER_URL }}
 
           # 登录本地服务器
           echo "${{ env.CONAN_SERVER_USER }}" | conan remote login local-server --password ${{ env.CONAN_SERVER_USER }}
