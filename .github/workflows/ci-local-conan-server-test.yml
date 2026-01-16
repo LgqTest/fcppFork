@@ -1,0 +1,137 @@
+name: Local Conan Server Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CONAN_HOME: ~/.conan2
+  CONAN_SERVER_URL: http://localhost:9300
+  CONAN_SERVER_USER: demo
+
+jobs:
+  local-conan-test:
+    # 只在包含特定 emoji 的 commit 时触发
+    if: >-
+      github.event_name == 'push' &&
+      contains(join(github.event.commits.*.message, '\n'), ':building_construction:')
+
+    name: Local Conan Server Test (${{ matrix.build_type }})
+    # 使用 self-hosted runner，根据你的 runner 标签配置
+    runs-on: [self-hosted, linux, conan]
+    # 如果你的 runner 有特定名称，也可以使用:
+    # runs-on: ai-server-runner
+
+    strategy:
+      matrix:
+        build_type: [Debug, Release]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Conan
+        run: |
+          pip install conan
+
+      - name: Get package name
+        id: read_meta
+        run: |
+          pkg_name=$(jq -r '.name | tostring' metadata.json)
+          pkg_version=$(jq -r '.version | tostring' metadata.json)
+          echo "pkg_name=$pkg_name" >> $GITHUB_OUTPUT
+          echo "pkg_version=$pkg_version" >> $GITHUB_OUTPUT
+
+      - name: Configure Conan for local server
+        run: |
+          echo "CONAN_HOME=${{ env.CONAN_HOME }}" >> $GITHUB_ENV
+          conan profile detect --force
+
+          # 添加本地 Conan Server
+          conan remote add local-server ${{ env.CONAN_SERVER_URL }} --insert 0
+
+          # 登录本地服务器
+          echo "${{ env.CONAN_SERVER_USER }}" | conan remote login local-server --password ${{ env.CONAN_SERVER_USER }}
+
+          # 验证连接
+          conan remote list
+          echo ""
+          echo "Testing connection to local server..."
+          curl -s ${{ env.CONAN_SERVER_URL }}/v1/ping || echo "Warning: Cannot ping local server"
+
+      - name: System dependencies
+        run: |
+          sudo apt install -y libnsl-dev build-essential
+
+      - name: Build with Conan
+        run: |
+          conan create . \
+            -pr:b=default \
+            -pr:h=default \
+            -s build_type=${{ matrix.build_type }} \
+            --build=missing
+
+      - name: Upload to local Conan Server
+        run: |
+          # 上传包到本地服务器
+          conan upload \
+            "${{ steps.read_meta.outputs.pkg_name }}/${{ steps.read_meta.outputs.pkg_version }}@" \
+            --remote=local-server \
+            --confirm \
+            --all
+
+      - name: Verify upload
+        run: |
+          # 搜索上传的包
+          echo "Searching for uploaded package..."
+          conan search "${{ steps.read_meta.outputs.pkg_name }}/${{ steps.read_meta.outputs.pkg_version }}" --remote=local-server || echo "Package search failed"
+
+      - name: Test package download
+        run: |
+          # 测试从本地服务器下载
+          conan download \
+            "${{ steps.read_meta.outputs.pkg_name }}/${{ steps.read_meta.outputs.pkg_version }}" \
+            --remote=local-server
+
+      - name: Run test_package
+        run: |
+          cd test_package
+          conan create . \
+            -pr:h=default \
+            -s build_type=${{ matrix.build_type }} \
+            --build=missing
+
+      - name: Clean up test_package builds
+        if: always()
+        run: |
+          python ./test_package/conanfile.py || true
+
+      - name: Clean up local packages
+        if: always()
+        run: |
+          conan remove "${{ steps.read_meta.outputs.pkg_name }}/*" --confirm || true
+          conan remove "test_*" --confirm || true
+
+      - name: Display build summary
+        if: always()
+        run: |
+          echo "========================================="
+          echo "Build Summary"
+          echo "========================================="
+          echo "Package: ${{ steps.read_meta.outputs.pkg_name }}"
+          echo "Version: ${{ steps.read_meta.outputs.pkg_version }}"
+          echo "Build Type: ${{ matrix.build_type }}"
+          echo "Conan Server: ${{ env.CONAN_SERVER_URL }}"
+          echo ""
+          echo "Local Conan Cache:"
+          conan list "*" || true
+          echo ""
+          echo "Remote Servers:"
+          conan remote list
