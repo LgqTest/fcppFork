@@ -114,7 +114,7 @@ def analyze_commits():
         current_msg_level, category = 0, None
 
         has_breaking_change = "BREAKING CHANGE" in full_msg
-        has_exclamation = bool(re.match(r"^[a-z]+(\([^)]*\))!:", first_line))
+        has_exclamation = bool(re.match(r"^[a-z]+(\([^)]*\))?!:", first_line))
         type_match = re.match(r"^([a-z]+)(\([^)]*\))?!?:", first_line, flags=re.I)
 
         if type_match:
