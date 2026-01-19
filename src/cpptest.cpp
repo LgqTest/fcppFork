@@ -80,5 +80,7 @@ void test_cpp_zlib() {
 // test conan sever-2
 // test conan sever-3
 
-// test conan sever-4 fix 小版本更新
-// test conan sever-4 feat 大版本更新
+// test conan sever-4 fix: 小版本更新
+// test conan sever-4 feat: 大版本更新
+
+// test conan sever-4 fix!: 破坏性更新
