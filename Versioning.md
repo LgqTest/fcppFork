@@ -1,3 +1,8 @@
+## 1.1.1 (2026-01-19)
+
+### Bug Fixes
+* test conan sever-4 fix 小版本更新 ([13e45d3](https://github.com/LgqTest/fcppFork/commit/13e45d3e9f9f37e0da2d54e22cc84d24e38371d2))
+
 # 1.1.0 (2026-01-16)
 
 ### Features
