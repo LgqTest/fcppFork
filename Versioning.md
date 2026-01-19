@@ -1,3 +1,8 @@
+# 2.0.0 (2026-01-19)
+
+### Breaking Changes
+* test conan sever-4 fix!: 破坏性更新 bug补充 ([431a2e0](https://github.com/LgqTest/fcppFork/commit/431a2e052b3b3e56ac91fecfabc07bea24b7d430))
+
 ## 1.2.1 (2026-01-19)
 
 ### Bug Fixes
