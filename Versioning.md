@@ -1,3 +1,8 @@
+# 3.0.0 (2026-01-19)
+
+### Breaking Changes
+* BREAKING CHANGE: 破坏性更新 bug补充 ([684d1d4](https://github.com/LgqTest/fcppFork/commit/684d1d43bf1ef8d3e8dcb9d3db3b4bb24a2b6f68))
+
 # 2.0.0 (2026-01-19)
 
 ### Breaking Changes
