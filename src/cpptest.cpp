@@ -89,3 +89,4 @@ void test_cpp_zlib() {
 // test conan sever-4 BREAKING CHANGE: 破坏性更新 bug补充
 
 // test conan sever-4 fix(:package:): semantic release fix bug demo
+// test conan sever-4 feat(:package:): semantic release feat bug demo
