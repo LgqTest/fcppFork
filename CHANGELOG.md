@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/LgqTest/fcppFork/compare/v1.1.1...v1.1.2) (2026-01-21)
+
+
+### Bug Fixes
+
+* **:package::** semantic release fix bug demo2 ([05d9e25](https://github.com/LgqTest/fcppFork/commit/05d9e25f2c9ae165d8942b06b0ccd080d02ffda5))
+
 ## [1.1.1](https://github.com/LgqTest/fcppFork/compare/v1.1.0...v1.1.1) (2026-01-19)
 
 
