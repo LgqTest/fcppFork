@@ -99,3 +99,5 @@ void test_cpp_zlib() {
 // w1w
 
 // w2w
+
+// fix(:package:): semantic release fix bug demo2
